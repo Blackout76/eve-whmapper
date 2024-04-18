@@ -35,7 +35,7 @@ cmd: `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/dow
 Anny issue with certificates?
 Use:
 List all certs: `sudo kubectl get ClusterIssuers,Certificates,CertificateRequests,Orders,Challenges --all-namespaces`
-Detail of evemapper cert status: `sudo kubectl describe certificaterequest tls-evemapper-1 -n evemapper`
+Detail of evemapper cert status: `sudo kubectl describe certificate tls-evemapper -n evemapper`
 
 #### Portainer (optional)
 

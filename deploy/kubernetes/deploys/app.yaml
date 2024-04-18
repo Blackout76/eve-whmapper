@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __NAMESPACE__-app
+  namespace: __NAMESPACE__
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: __NAMESPACE__-app
+  template:
+    metadata:
+      labels:
+        component: __NAMESPACE__-app 
+    spec:
+      containers:
+        - name: __NAMESPACE__-app
+          image: __APP_IMAGE__
+          envFrom:
+          - configMapRef:
+              name: __NAMESPACE__-config-map
+          - secretRef:
+              name: __NAMESPACE__-secrets
+---
+      
+apiVersion: v1
+kind: Service
+metadata:
+  name: __NAMESPACE__-service
+  namespace: __NAMESPACE__
+spec:
+  type: NodePort
+  selector:
+    component: __NAMESPACE__-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: __PORT_APP__
+
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: __NAMESPACE__-ingress
+  namespace: __NAMESPACE__
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - __DOMAIN__
+    secretName: tls-__NAMESPACE__
+  rules:
+  - host: __DOMAIN__
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: __NAMESPACE__-service
+            port:
+              number: __PORT_APP__

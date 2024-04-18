@@ -1,0 +1,15 @@
+lse if (system_region!.Name == REGION_POCHVVEN_NAME)//trig system
+            {
+                res = new EveSystemNodeModel(wh, note, system_region.Name, system_constellation.Name, EveSystemType.Pochven, WHEffect.None,null,null);
+            }
+            else// K-space
+            {
+                res = new EveSystemNodeModel(wh, note, system_region.Name, system_constellation.Name);
+                _logger?.LogError("system=" + wh.Name + ", sec=" +  wh.SecurityStatus + ", systemType=" + res.SystemType);
+            }
+
+if(fromSolarSystemJump.JumpList.Count() == 0)
+        {
+            _logger.LogInformation("No connection from solar system {0}",fromSolarSystemId);
+            return new int[0];
+        }

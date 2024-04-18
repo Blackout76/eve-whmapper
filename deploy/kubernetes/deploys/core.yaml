@@ -1,0 +1,140 @@
+
+################################## 
+### ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: __NAMESPACE__-config-map
+  namespace: __NAMESPACE__
+data:
+  DOMAIN:  __DOMAIN__
+  POSTGRES_DB: __DB_NAME__
+  POSTGRESQL_USERNAME: __DB_USER__
+  POSTGRESQL_PASSWORD: __DB_PASSWORD__
+  POSTGRESQL_DATABASE: __DB_NAME__
+  EveSSO__ClientId: __EVE_KEY__
+  EveSSO__Secret: __EVE_SECRET__
+  ConnectionStrings__DatabaseConnection: server=__CLUSTER_IP__;port=__PORT_DB__;database=__DB_NAME__;User Id=__DB_USER__;Password=__DB_PASSWORD__
+  ConnectionStrings__RedisConnection: __CLUSTER_IP__:__PORT_REDIS__
+  Logging__LogLevel__Default: Warning
+  Logging__LogLevel__Microsoft.EntityFrameworkCore.Database.Command: Warning
+
+---
+
+################################## 
+### Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: __NAMESPACE__-secrets
+  namespace: __NAMESPACE__
+---
+
+################################## 
+### Database
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: __NAMESPACE__
+spec: 
+  replicas: 1
+  selector:
+    matchLabels:
+      component: database
+  template:
+    metadata:
+      labels:
+        component: database
+    spec:
+      nodeName: __NODE_NAME__
+      volumes:
+        - name: __NAMESPACE__-db-volume
+          persistentVolumeClaim:
+            claimName: __NAMESPACE__-pvc
+      initContainers:
+      - name: create-subdir
+        image: busybox
+        command: ['sh', '-c', 'mkdir -p /database']
+        volumeMounts:
+        - name: __NAMESPACE__-db-volume
+          mountPath: "/bitnami/postgresql"
+          subPath: database
+      containers:
+        - name: database
+          image: bitnami/postgresql:latest
+          ports:
+            - containerPort: 5432
+          envFrom:
+          - configMapRef:
+              name: __NAMESPACE__-config-map
+          - secretRef:
+              name: __NAMESPACE__-secrets
+          volumeMounts:
+          - name: __NAMESPACE__-db-volume
+            mountPath: "/bitnami/postgresql"
+            subPath: database
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-cluster-ip-service
+  namespace: __NAMESPACE__
+spec:
+  type: NodePort
+  selector:
+    component: database
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: __PORT_DB__
+---
+
+################################## 
+### Redis
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: __NAMESPACE__
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: redis
+  template:
+    metadata:
+      labels:
+        component: redis 
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          ports:
+            - containerPort: 6379
+          envFrom:
+          - configMapRef:
+              name: __NAMESPACE__-config-map
+          - secretRef:
+              name: __NAMESPACE__-secrets
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-cluster-ip-service
+  namespace: __NAMESPACE__
+spec:
+  type: NodePort
+  selector:
+    component: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      nodePort: __PORT_REDIS__
+---
+
+
